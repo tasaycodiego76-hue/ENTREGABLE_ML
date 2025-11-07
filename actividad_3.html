@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reconocimiento de Objetos con Voz</title>
+</head>
+<body>
+  <h1>Reconocimiento de Objetos</h1>
+  <p>Modelo entrenado con Teachable Machine. Activa el sonido para que diga el nombre del objeto detectado.</p>
+
+  <h3>Miniaturas (referencia)</h3>
+  <div>
+    <img src="images/billetera.webp" alt="Mouse" width="80">
+    <img src="images/lapicero.webp" alt="Lapicero" width="80">
+    <img src="images/mouse.webp" alt="Billetera" width="80">
+    <img src="images/telefono.jpg" alt="Teléfono" width="80">
+    <img src="images/tijera.jpg" alt="Tijeras" width="80">
+  </div>
+
+  <br>
+  <label>
+    <input type="checkbox" id="activarSonido">
+    Activar sonido
+  </label>
+
+  <div style="margin-top:15px;">Teachable Machine Image Model - p5.js y ml5.js</div>
+
+  <!-- Librerías -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.1.9/p5.min.js"></script>
+  <script src="https://unpkg.com/ml5@0.5.0/dist/ml5.min.js"></script>
+
+  <script type="text/javascript">
+    let classifier;
+    let imageModelURL = "./models/";
+    let video;
+    let flippedVideo;
+    let label = "";
+    let ultimaEtiquetaHablada = ""; // etiqueta que se habló por última vez
+    let checkbox = null;
+
+    function preload() {
+      classifier = ml5.imageClassifier(imageModelURL + "model.json");
+    }
+
+    function setup() {
+      createCanvas(320, 260);
+      video = createCapture(VIDEO);
+      video.size(320, 240);
+      video.hide();
+      flippedVideo = ml5.flipImage(video);
+
+      // Referencia al checkbox y manejador de cambio
+      checkbox = document.querySelector("#activarSonido");
+      checkbox.addEventListener("change", onToggleSonido);
+
+      classifyVideo();
+    }
+
+    function draw() {
+      background(0);
+      image(flippedVideo, 0, 0);
+      fill(255);
+      textSize(16);
+      textAlign(CENTER);
+      text(label, width / 2, height - 4);
+    }
+
+    function classifyVideo() {
+      flippedVideo = ml5.flipImage(video);
+      classifier.classify(flippedVideo, gotResult);
+      flippedVideo.remove();
+    }
+
+    function gotResult(error, results) {
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      // Nombre detectado por el modelo
+      label = results[0].label;
+
+      // Si está activado el sonido y la etiqueta cambió, hablar
+      if (checkbox && checkbox.checked) {
+        if (label !== ultimaEtiquetaHablada) {
+          speakLabel(label);
+          ultimaEtiquetaHablada = label;
+        }
+      }
+
+      // Si está desactivado, no hablar (y guardamos la etiqueta para evitar hablarla sin reactivar)
+      if (checkbox && !checkbox.checked) {
+        // no hacemos nada aquí (solo evitamos hablar)
+        // dejamos ultimaEtiquetaHablada = label para que al activar no repita inmediatamente
+        ultimaEtiquetaHablada = label;
+      }
+
+      // Seguir clasificando
+      classifyVideo();
+    }
+
+    // Función para hablar una etiqueta (usa speechSynthesis)
+    function speakLabel(texto) {
+      // cancelar cualquier habla previa para evitar solapamientos
+      speechSynthesis.cancel();
+
+      if (!texto || texto.trim() === "") return;
+
+      const mensaje = new SpeechSynthesisUtterance(texto);
+      // configuraciones simples por defecto (no pediste elegir idioma ni nada)
+      speechSynthesis.speak(mensaje);
+    }
+
+    // Al cambiar el checkbox: si se activa -> forzamos que diga lo que hay ahora.
+    // Si se desactiva -> cancelamos cualquier reproducción y evitamos hablar hasta reactivar.
+    function onToggleSonido(event) {
+      const activo = event.target.checked;
+
+      if (activo) {
+        // Queremos que diga inmediatamente lo que está viendo ahora,
+        // incluso si es la misma etiqueta que antes: reseteamos ultimaEtiquetaHablada
+        // para forzar el habla
+        ultimaEtiquetaHablada = ""; // fuerza a que el siguiente gotResult hable
+        // además, si ya tenemos una etiqueta actual, la pronunciamos ahora mismo:
+        if (label && label.trim() !== "") {
+          speakLabel(label);
+          ultimaEtiquetaHablada = label;
+        }
+      } else {
+        // Si se desactiva: cancelar voz en curso y no hablar más
+        speechSynthesis.cancel();
+        // Guardamos la etiqueta actual para que no se hable hasta que se reactive
+        if (label && label.trim() !== "") {
+          ultimaEtiquetaHablada = label;
+        } else {
+          ultimaEtiquetaHablada = "";
+        }
+      }
+    }
+  </script>
+</body>
+</html>
