@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login con dibujo</title>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.0/p5.min.js"></script>
+  <script src="https://unpkg.com/ml5@1/dist/ml5.min.js"></script>
+
+  <style>
+    body {
+      background-color: bisque;
+      font-family: Arial, sans-serif;
+      text-align: center;
+    }
+    form {
+      margin-bottom: 15px;
+    }
+    canvas {
+      display: block;
+      margin: 10px auto;
+      border: 2px solid #000;
+      border-radius: 5px;
+      background-color: white;
+    }
+    #resultado {
+      font-size: 20px;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <h2> Login con dibujo</h2>
+
+  <form id="form-login" autocomplete="off">
+    <div>
+      <label for="usuario">Usuario</label><br>
+      <input type="text" id="usuario">
+    </div>
+    <br>
+    <div>
+      <label for="password">Contraseña</label><br>
+      <input type="password" id="password">
+    </div>
+    <br>
+    <button type="submit">Verificar</button>
+  </form>
+
+  <h3>Dibuja tu código secreto</h3>
+
+  <script>
+    // Lista de usuarios válidos
+    const listaUsuarios = [
+      { nombre: 'juanito', clave: '123456', codigo: 'strawberry' },
+      { nombre: 'pablito', clave: 'abc12345', codigo: 'chair' },
+      { nombre: 'magaly', clave: 'firulais', codigo: 'sun' }
+    ];
+
+    // Variables globales
+    let classifier;
+    let clearButton;
+    let resultsDiv;
+    let canvas;
+    let currentLabel = "";
+
+    function preload() {
+      classifier = ml5.imageClassifier("DoodleNet");
+    }
+
+    function setup() {
+      // Crear lienzo
+      canvas = createCanvas(280, 280);
+      background(255);
+
+      // Iniciar clasificación del dibujo en tiempo real
+      classifier.classifyStart(canvas, gotResult);
+
+      // Crear botón de reinicio
+      clearButton = createButton('Reiniciar dibujo');
+      clearButton.mousePressed(clearCanvas);
+      clearButton.style('margin', '10px');
+
+      // Div para resultados
+      resultsDiv = createDiv("Esperando dibujo...");
+      resultsDiv.id("resultado");
+    }
+
+    function draw() {
+      strokeWeight(16);
+      stroke(0);
+
+      if (mouseIsPressed) {
+        line(pmouseX, pmouseY, mouseX, mouseY);
+      }
+    }
+
+    function clearCanvas() {
+      background(255);
+      currentLabel = "";
+      resultsDiv.html("Dibuja nuevamente...");
+    }
+
+    function gotResult(results) {
+      currentLabel = results[0].label;
+      let confidence = (results[0].confidence * 100).toFixed(2);
+      resultsDiv.html(`Dibujo: <b>${currentLabel}</b> (${confidence}%)`);
+    }
+
+    // --- Lógica del formulario ---
+    const formulario = document.querySelector("#form-login");
+    const usuario = document.querySelector("#usuario");
+    const password = document.querySelector("#password");
+
+    formulario.addEventListener("submit", (event) => {
+      event.preventDefault();
+
+      const user = listaUsuarios.find(u => u.nombre === usuario.value);
+
+      if (!user) {
+        alert("Usuario no existe");
+        return;
+      }
+
+      if (user.clave !== password.value) {
+        alert("Contraseña incorrecta");
+        return;
+      }
+
+      // Validar dibujo con el modelo
+      if (currentLabel === user.codigo) {
+        alert(" Ingreso exitoso al sistema");
+        clearCanvas();
+      } else if (currentLabel === "") {
+        alert("Por favor, realiza un dibujo para validar el código.");
+      } else {
+        alert(" El dibujo no coincide con tu código (" + user.codigo + ")");
+      }
+    });
+  </script>
+
+</body>
+</html>
