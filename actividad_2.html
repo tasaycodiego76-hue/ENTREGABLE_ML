@@ -8,6 +8,11 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.0/p5.min.js"></script>
   <script src="https://unpkg.com/ml5@1/dist/ml5.min.js"></script>
 
+  <!-- Bootstrap CSS -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+
+
   <style>
     body {
       background-color: bisque;
@@ -32,6 +37,12 @@
   </style>
 </head>
 <body>
+
+  <a href="index.html" 
+   class="btn btn-primary btn-lg rounded-pill shadow-sm"
+   style="position: fixed; top: 20px; left: 20px;">
+   Regresar al inicio
+</a>
 
   <h2> Login con dibujo</h2>
 
@@ -115,30 +126,42 @@
     const password = document.querySelector("#password");
 
     formulario.addEventListener("submit", (event) => {
-      event.preventDefault();
+  event.preventDefault();
 
-      const user = listaUsuarios.find(u => u.nombre === usuario.value);
+  const user = listaUsuarios.find(u => u.nombre === usuario.value);
 
-      if (!user) {
-        alert("Usuario no existe");
-        return;
-      }
+  if (!user) {
+    alert("Usuario no existe");
+    return;
+  }
 
-      if (user.clave !== password.value) {
-        alert("Contraseña incorrecta");
-        return;
-      }
+  if (user.clave !== password.value) {
+    alert("Contraseña incorrecta");
+    return;
+  }
 
-      // Validar dibujo con el modelo
-      if (currentLabel === user.codigo) {
-        alert(" Ingreso exitoso al sistema");
-        clearCanvas();
-      } else if (currentLabel === "") {
-        alert("Por favor, realiza un dibujo para validar el código.");
-      } else {
-        alert(" El dibujo no coincide con tu código (" + user.codigo + ")");
-      }
-    });
+  // Convertir confidence a número
+  let confidence = 0;
+  if (currentLabel === user.codigo) {
+    // Tomamos el confidence del resultado actual
+    confidence = parseFloat(resultsDiv.html().match(/\((\d+(\.\d+)?)%\)/)[1]);
+  }
+
+  // Validar dibujo con el modelo y el porcentaje
+  if (currentLabel === "") {
+    alert("Por favor, realiza un dibujo para validar el código.");
+  } else if (currentLabel === user.codigo && confidence >= 75) {
+    alert("Ingreso exitoso al sistema");
+    clearCanvas();
+  } else if (currentLabel === user.codigo && confidence < 70) {
+    alert("Dibujo reconocido, pero la certeza es demasiado baja (" + confidence + "%). Intenta nuevamente.");
+  } else {
+    alert("El dibujo no coincide con tu código (" + user.codigo + ")");
+  }
+});
+
+
+
   </script>
 
 </body>
