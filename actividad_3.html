@@ -50,6 +50,7 @@
       classifier = ml5.imageClassifier(imageModelURL + "model.json");
     }
 
+    // Prepara canvas, cámara, checkbox de sonido y comienza la detección
     function setup() {
       let canvas = createCanvas(320, 260);
       canvas.parent(document.querySelector(".mx-auto.border")); // Coloca el canvas dentro del recuadro
@@ -64,6 +65,7 @@
       classifyVideo();
     }
 
+    // Dibuja la cámara y la etiqueta detectada en tiempo real
     function draw() {
       background(0);
       image(flippedVideo, 0, 0);
@@ -72,13 +74,16 @@
       textAlign(CENTER);
       text(label, width / 2, height - 4);
     }
+    
 
+    // Clasifica el frame actual de la cámara y llama a gotResult
     function classifyVideo() {
       flippedVideo = ml5.flipImage(video);
       classifier.classify(flippedVideo, gotResult);
       flippedVideo.remove();
     }
 
+    // Maneja los resultados de la clasificación
     function gotResult(error, results) {
       if (error) {
         console.error(error);
@@ -101,6 +106,8 @@
       classifyVideo();
     }
 
+    
+// Pronuncia la etiqueta usando el sintetizador de voz del navegador
     function speakLabel(texto) {
       speechSynthesis.cancel();
       if (!texto || texto.trim() === "") return;
@@ -108,6 +115,7 @@
       speechSynthesis.speak(mensaje);
     }
 
+    // Controla la activación/desactivación del sonido
     function onToggleSonido(event) {
       const activo = event.target.checked;
 
